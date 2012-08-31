@@ -1,0 +1,1 @@
+{"DeliveryEstimateRequestResponse":{"DeliveryEstimateDates":{"DeliveryEstimateDate":[{"DeliveryDate":"2011-04-11","NumberOfWorkingDays":2,"TimedDeliveryEnabled":false},{"DeliveryDate":"2011-04-12","NumberOfWorkingDays":3,"TimedDeliveryEnabled":true},{"DeliveryDate":"2011-04-13","NumberOfWorkingDays":4,"TimedDeliveryEnabled":true}]}}}
