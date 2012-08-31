@@ -31,7 +31,7 @@ class TestDeliveryEstimateDate(TestCase):
         self.assertEquals(ded.timed_delivery, False)
 
     def test_creating_date_from_multiple_date_json_response(self):
-        response = json.load(open('tests/data/deliverydates.json', 'r'))
+        response = json.load(open('tests/data/DeliveryDates.json', 'r'))
 
         deds = DeliveryDate.from_json(response)
         self.assertEquals(len(deds), 3)
@@ -52,7 +52,7 @@ class TestDeliveryEstimateDate(TestCase):
 class TestTimeslot(TestCase):
 
     def test_creating_timeslots_from_json_response(self):
-        response = json.load(open('tests/data/deliverytimeslots.json', 'r'))
+        response = json.load(open('tests/data/DeliveryTimeslots.json', 'r'))
 
         timeslots = TimeSlot.from_json(response)
 

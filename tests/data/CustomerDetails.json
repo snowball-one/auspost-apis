@@ -1,0 +1,35 @@
+{
+  "CustomerDetails": {
+    "DeliveryAddresses": {
+      "Description": "Mum's house",
+      "Instructions": "Access from side path",
+      "DeliveryAddress": {
+        "AddressLine": [
+          "Unit A",
+          "31 Charles St"
+        ],
+        "SuburbOrPlaceOrLocality": "Richmond",
+        "StateOrTerritory": "VIC",
+        "PostCode": "3121",
+        "DeliveryPointIdentifier": "3454351",
+        "Country": {
+          "CountryCode": "AU",
+          "CountryName": "Australia"
+        }
+      },
+      "ElectronicContact": {
+        "ContactUsage": "Delivery access",
+        "Preference": "PREFERRED",
+        "Telephone": {
+          "ServiceLine": "LANDLINE",
+          "AreaCodeNumber": "03",
+          "TelephoneNumber": "91231234",
+          "CommunicationType": "VOICE ENABLED"
+        },
+        "Comments": "No calls after 6:00 pm"
+      },
+      "SignatureRequired": "true",
+      "isFavourite": "true"
+    }
+  }
+}
