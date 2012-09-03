@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='auspost-apis',
-    version=":versiontools:auspost_apis:",
+    version=":versiontools:auspost:",
     url='https://github.com/elbaschid/auspost-apis',
     author="Sebastian Vetter",
     author_email="sebastian.vetter@tangentsnowball.com.au",
