@@ -1,5 +1,7 @@
 import requests
 
+from datetime import date
+
 from auspost import common
 
 
@@ -15,7 +17,7 @@ def api_request(f):
     return func
 
 
-class DeliveryChoiceApi(common.AuspostObject):
+class DeliveryChoiceApi(object):
 
     DELIVERY_NETWORKS = {
         '01': 'Standard',
@@ -26,7 +28,7 @@ class DeliveryChoiceApi(common.AuspostObject):
         self.url = DEV_ENDPOINT
         self.username = 'anonymous@auspost.com.au'
         self.password = 'password'
-        self.format = 'json' 
+        self.format = 'json'
 
         if username and password:
             self.url = PRD_ENDPOINT
@@ -37,10 +39,25 @@ class DeliveryChoiceApi(common.AuspostObject):
     def delivery_dates(self, from_postcode, to_postcode, lodgement_date,
                        network_id='01', number_of_dates=1, **kwargs):
 
+        if not common.is_valid_postcode(from_postcode):
+            raise common.AusPostException(1001)
+
+        if not common.is_valid_postcode(to_postcode):
+            raise common.AusPostException(1002)
+
+        if network_id not in self.DELIVERY_NETWORKS:
+            raise common.AusPostException(1003)
+
+        if lodgement_date < date.today():
+            raise common.AusPostException(1004)
+
+        if number_of_dates not in range(1, 11):
+            raise common.AusPostException(1005)
+
         response =  self.send_request(kwargs.get('api_name'), params={
             'fromPostcode': from_postcode,
             'toPostcode': to_postcode,
-            'lodgementDate': lodgement_date,
+            'lodgementDate': lodgement_date.strftime("%Y-%m-%d"),
             'networkId': network_id,
             'numberOfDates': number_of_dates,
         })
@@ -55,7 +72,6 @@ class DeliveryChoiceApi(common.AuspostObject):
     def postcode_capability(self, postcode=None, **kwargs):
         """ valid postcode or nothing (returns all postcodes) """
         raise NotImplementedError()
-        #response =  self.send_request(kwargs.get('api_name'), {'postcode': postcode})
 
     @api_request
     def customer_collection_points(self, state=None, postcode=None,
@@ -70,7 +86,6 @@ class DeliveryChoiceApi(common.AuspostObject):
                 'q': ",".join(tracking_numbers),
             }
         )
-        print response.status_code, response.text, response.error, response.reason
         return TrackingResult.from_json(response.json)
 
     @api_request
@@ -88,14 +103,12 @@ class DeliveryChoiceApi(common.AuspostObject):
 
     def send_request(self, path, params, **kwargs):
         request_url = u"%s/%s.%s" % (self.url, path, self.format)
-        print request_url, params
         response = requests.get(
             request_url,
             auth=(self.username, self.password),
             cookies={'OBBasicAuth': 'fromDialog'},
             params=params,
         )
-        #TODO handle HTTP errors
         self.check_response(response)
         return response
 
@@ -116,7 +129,7 @@ class DeliveryChoiceApi(common.AuspostObject):
             raise common.AusPostException(code, message)
 
 
-class DeliveryDate(common.AuspostObject):
+class DeliveryDate(object):
 
     def __init__(self, delivery_date, working_days, timed_delivery):
         self.delivery_date = delivery_date
@@ -130,8 +143,8 @@ class DeliveryDate(common.AuspostObject):
             res = res['DeliveryEstimateDate']
         except KeyError:
             raise Exception
-    
-        res = cls._ensure_list(res)
+
+        res = common.ensure_list(res)
 
         dates = []
         for item in res:
@@ -154,7 +167,7 @@ class DeliveryDate(common.AuspostObject):
         return "%s %s" % (self.delivery_date, self.timed_delivery)
 
 
-class TimePeriod(common.AuspostObject):
+class TimePeriod(object):
 
     def __init__(self, start_time, end_time, duration):
         self.start_time = start_time
@@ -189,7 +202,7 @@ class TimePeriod(common.AuspostObject):
         return periods
 
 
-class TimeSlot(common.AuspostObject):
+class TimeSlot(object):
 
     def __init__(self, week_day, periods=None):
         self.day = week_day
@@ -212,7 +225,7 @@ class TimeSlot(common.AuspostObject):
         return timeslots
 
 
-class PostcodeDeliveryCapability(common.AuspostObject):
+class PostcodeDeliveryCapability(object):
 
     def __init__(self, postcode, days, last_modified):
         self.postcode = postcode
@@ -227,7 +240,7 @@ class PostcodeDeliveryCapability(common.AuspostObject):
         except:
             raise Exception
 
-        result = cls._ensure_list(result)
+        result = common.ensure_list(result)
 
         capabilities = []
         for item in result:
@@ -236,16 +249,16 @@ class PostcodeDeliveryCapability(common.AuspostObject):
                 cls(
                     postcode=item['Postcode'],
                     last_modified=utc_dt,
-                    days=Day.from_json(item['WeekDay']), 
+                    days=Day.from_json(item['WeekDay']),
                 )
             )
         return capabilities
 
 
-class Day(common.AuspostObject):
+class Day(object):
 
     def __init__(self, name, standard_delivery_enabled, timed_delivery_enabled):
-        self.name = name 
+        self.name = name
         self.standard_delivery_enabled = standard_delivery_enabled
         self.timed_delivery_enabled = timed_delivery_enabled
 
@@ -263,7 +276,7 @@ class Day(common.AuspostObject):
         return days
 
 
-class TrackingResult(common.AuspostObject):
+class TrackingResult(object):
 
     def __init__(self, id, article=None, consignment=None):
         self.id = unicode(id)
@@ -278,7 +291,7 @@ class TrackingResult(common.AuspostObject):
         except KeyError:
             raise Exception
 
-        for item in cls._ensure_list(tracking_list):
+        for item in common.ensure_list(tracking_list):
             tracking_result = cls(
                 id=item['TrackingID'],
             )
@@ -302,7 +315,7 @@ class TrackingResult(common.AuspostObject):
         return tracking_results
 
 
-class Article(common.AuspostObject):
+class Article(object):
 
     def __init__(self, id, product_name=None, event_notification=None, status=None,
                  origin=None, destination=None, events=None):
@@ -318,7 +331,7 @@ class Article(common.AuspostObject):
     def from_json(cls, json):
         articles = []
 
-        for item in cls._ensure_list(json):
+        for item in common.ensure_list(json):
             article = cls(
                 id=item['ArticleID'],
                 event_notification=item.get('EventNotification', None),
@@ -349,7 +362,7 @@ class Article(common.AuspostObject):
         return articles
 
 
-class Consignment(common.AuspostObject):
+class Consignment(object):
 
     def __init__(self, id, articles=None):
         self.id = unicode(id)
@@ -372,7 +385,7 @@ class Consignment(common.AuspostObject):
         return consignment
 
 
-class Event(common.AuspostObject):
+class Event(object):
 
     def __init__(self, description, timestamp, location, signer_name=None):
         self.description = description
@@ -388,7 +401,7 @@ class Event(common.AuspostObject):
         except KeyError:
             return events
 
-        for item in cls._ensure_list(event_list):
+        for item in common.ensure_list(event_list):
             event = cls(
                 description=item['EventDescription'],
                 timestamp=common.get_aware_utc_datetime(
@@ -396,7 +409,7 @@ class Event(common.AuspostObject):
                 ),
                 location=item['Location'],
             )
-            try: 
+            try:
                 event.signer_name = item['SignerName'] or None
             except KeyError:
                 pass

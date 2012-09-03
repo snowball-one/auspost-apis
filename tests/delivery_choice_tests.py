@@ -1,7 +1,7 @@
 import json
 import pytz
 
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from unittest import TestCase
 
 from auspost.delivery_choice import *
@@ -15,6 +15,55 @@ class AuspostTestCase(TestCase):
             path = 'tests/data/%s.json' % fixture
             json_data = json.load(open(path, 'r'))
             setattr(self, fixture.lower(), json_data)
+
+
+class TestDeliveryChoiceApi(TestCase):
+
+    def setUp(self):
+        self.api = DeliveryChoiceApi()
+
+    def test_using_delivery_dates_with_invalid_from_postcode(self):
+        try:
+            self.api.delivery_dates('abcde', 3000, date.today())
+            self.fail("no exception raised for invalid 'from_postcode'")
+        except common.AusPostException as exc:
+            self.assertEquals(exc.code, 1001)
+
+    def test_using_delivery_dates_with_invalid_to_postcode(self):
+        try:
+            self.api.delivery_dates(3000, 'abcde', date.today())
+            self.fail("no exception raised for invalid 'to_postcode'")
+        except common.AusPostException as exc:
+            self.assertEquals(exc.code, 1002)
+
+    def test_using_delivery_dates_with_invalid_network_id(self):
+        try:
+            self.api.delivery_dates(3000, 3006, date.today(), network_id='04')
+            self.fail("no exception raised for invalid 'network_id'")
+        except common.AusPostException as exc:
+            self.assertEquals(exc.code, 1003)
+
+    def test_using_delivery_dates_with_invalid_date(self):
+        yesterday = date.today() - timedelta(days=1)
+        try:
+            self.api.delivery_dates(3000, 3006, yesterday)
+            self.fail("no exception raised for invalid 'lodgement_date'")
+        except common.AusPostException as exc:
+            self.assertEquals(exc.code, 1004)
+
+    def test_using_delivery_dates_with_invalid_number_of_dates(self):
+        try:
+            self.api.delivery_dates(3000, 3006, date.today(), number_of_dates=0)
+            self.fail("no exception raised for invalid 'lodgement_date'")
+        except common.AusPostException as exc:
+            self.assertEquals(exc.code, 1005)
+
+        try:
+            self.api.delivery_dates(3000, 3006, date.today(), number_of_dates=11)
+            self.fail("no exception raised for invalid 'lodgement_date'")
+        except common.AusPostException as exc:
+            self.assertEquals(exc.code, 1005)
+
 
 class TestDeliveryEstimateDate(AuspostTestCase):
     fixtures = ['delivery_dates']

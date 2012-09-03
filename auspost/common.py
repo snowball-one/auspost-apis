@@ -42,20 +42,14 @@ DAY_CODES = {
 }
 
 
-def get_aware_utc_datetime(datetime_str):
-    dt = date_parser.parse(datetime_str)
-    if dt.tzinfo:
-        dt = dt.astimezone(tzoffset(None, 0))
-        utc_dt = pytz.utc.normalize(dt)
-    else:
-        utc_dt = pytz.utc.localize(dt)
-    return utc_dt
-
-
 class AusPostException(Exception):
 
-    def __init__(self, code, msg):
+    def __init__(self, code, msg=None):
         self.code = code
+
+        if not msg:
+            msg = DELIVERY_CHOICE_ERROR_CODES.get(code, '')
+
         self.message = msg
         super(AusPostException, self).__init__(self.get_error_message())
 
@@ -67,14 +61,36 @@ class AusPostHttpException(AusPostException):
     pass
 
 
-class AuspostObject(object):
+def get_aware_utc_datetime(datetime_str):
+    dt = date_parser.parse(datetime_str)
+    if dt.tzinfo:
+        dt = dt.astimezone(tzoffset(None, 0))
+        utc_dt = pytz.utc.normalize(dt)
+    else:
+        utc_dt = pytz.utc.localize(dt)
+    return utc_dt
 
-    @classmethod
-    def _ensure_list(cls, json):
-        try:
-            json.keys()
-            return [json]
-        except AttributeError:
-            pass
 
+def is_valid_postcode(postcode):
+    try:
+        return bool(int(postcode) > 999)
+    except ValueError:
+        return False
+
+
+def ensure_list(json):
+    """
+    Ensure that the *json* passed in is a list and not just a simple
+    dictionary. If a dictionary is passed in a list of a single item
+    will be returned otherwise, *json* is returned unchanged.
+
+    This is required because the generated JSON from the APIs will
+    return a dictionary for items such as ``Article`` with only a single
+    item present instead of a list with one item. Calling this method
+    prevents prevents unneccessary checking and exception handling.
+    """
+    try:
+        json.keys()    # if this is a dictionary
+        return [json]  # return it as a list
+    except AttributeError:
         return json
