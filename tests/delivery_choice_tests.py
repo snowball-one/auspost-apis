@@ -88,7 +88,23 @@ class TestPostcodeCapability(AuspostTestCase):
 
         capability = capabilities[0]
         self.assertEquals(capability.postcode, 3121)
+        self.assertEquals(len(capability.days), 7)
         self.assertEquals(
             capability.last_modified.isoformat(),
             datetime(2011, 7, 29, 4, 5, 50, tzinfo=pytz.utc).isoformat()
         )
+        
+        expected_days = (
+            ('Monday', True, True),
+            ('Tuesday', True, True),
+            ('Wednesday', True, True),
+            ('Thursday', True, True),
+            ('Friday', True, True),
+            ('Saturday', False, False),
+            ('Sunday', False, False),
+        )
+
+        for (day, sde, tde), day_obj in zip(expected_days, capability.days):
+            self.assertEquals(day_obj.name, day)
+            self.assertEquals(day_obj.standard_delivery_enabled, sde)
+            self.assertEquals(day_obj.timed_delivery_enabled, tde)
