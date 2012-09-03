@@ -1,0 +1,43 @@
+{
+  "QueryTrackEventsResponse": {
+    "TrackingResult": [
+      {
+        "TrackingID": "CZ299999784AU",
+        "ArticleDetails": {
+          "ArticleID": "CZ299999784AU",
+          "EventNotification": "00",
+          "ProductName": "International",
+          "EventCount": 0
+        }
+      },
+      {
+        "TrackingID": 12345,
+        "ArticleDetails": {
+          "ArticleID": 12345,
+          "Status": "Delivered",
+          "EventCount": 3,
+          "Events": {
+            "Event": [
+              {
+                "EventDescription": "Delivered",
+                "EventDateTime": "2010-06-21T12:21:12+10:00",
+                "Location": "224952 work centre"
+              },
+              {
+                "EventDescription": "Delivered",
+                "EventDateTime": "2010-06-21T12:12:12+10:00",
+                "Location": "224952 work centre"
+              },
+              {
+                "EventDescription": "Delivered",
+                "EventDateTime": "2008-12-10T12:12:12+11:00",
+                "Location": "PROP - PROPERTY DEVELOPMENTS",
+                "SignerName": "A POST"
+              }
+            ]
+          }
+        }
+      }
+    ]
+  }
+}

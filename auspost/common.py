@@ -63,6 +63,10 @@ class AusPostException(Exception):
         return u"Error %d: %s" % (self.code, self.message)
 
 
+class AusPostHttpException(AusPostException):
+    pass
+
+
 class AuspostObject(object):
 
     @classmethod

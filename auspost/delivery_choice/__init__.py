@@ -63,9 +63,15 @@ class DeliveryChoiceApi(common.AuspostObject):
         raise NotImplementedError()
 
     @api_request
-    def query_tracking(self, tracking_id, **kwargs):
-        #TODO Check for list first and convert sting to list of one item
-        raise NotImplementedError()
+    def query_tracking(self, tracking_numbers, **kwargs):
+        response = self.send_request(
+            kwargs.get('api_name'),
+            params={
+                'q': ",".join(tracking_numbers),
+            }
+        )
+        print response.status_code, response.text, response.error, response.reason
+        return TrackingResult.from_json(response.json)
 
     @api_request
     def validate_address(self, line1, suburb, state, postcode, line2=None,
@@ -82,6 +88,7 @@ class DeliveryChoiceApi(common.AuspostObject):
 
     def send_request(self, path, params, **kwargs):
         request_url = u"%s/%s.%s" % (self.url, path, self.format)
+        print request_url, params
         response = requests.get(
             request_url,
             auth=(self.username, self.password),
@@ -93,6 +100,12 @@ class DeliveryChoiceApi(common.AuspostObject):
         return response
 
     def check_response(self, response):
+        if response.status_code != 200:
+            raise common.AusPostHttpException(
+                response.status_code,
+                response.reason,
+            )
+
         try:
             exc = response.json.values()[0]['BusinessException']
             code, message = exc['Code'], exc['Description']
@@ -248,3 +261,154 @@ class Day(common.AuspostObject):
                 )
             )
         return days
+
+
+class TrackingResult(common.AuspostObject):
+
+    def __init__(self, id, article=None, consignment=None):
+        self.id = unicode(id)
+        self.article = article
+        self.consignment = consignment
+
+    @classmethod
+    def from_json(cls, json):
+        tracking_results = []
+        try:
+            tracking_list = json['QueryTrackEventsResponse']['TrackingResult']
+        except KeyError:
+            raise Exception
+
+        for item in cls._ensure_list(tracking_list):
+            tracking_result = cls(
+                id=item['TrackingID'],
+            )
+
+            articles = Article.from_json(item.get('ArticleDetails', []))
+            if len(articles) == 1:
+                tracking_result.article = articles[0]
+            else:
+                raise common.AusPostException(
+                    'found more than 1 article in JSON response'
+                )
+
+            if 'ConsignmentDetails' in item:
+                consignment = Consignment.from_json(
+                    item['ConsignmentDetails']
+                )
+                tracking_result.consignment = consignment
+
+            tracking_results.append(tracking_result)
+
+        return tracking_results
+
+
+class Article(common.AuspostObject):
+
+    def __init__(self, id, product_name=None, event_notification=None, status=None,
+                 origin=None, destination=None, events=None):
+        self.id = unicode(id)
+        self.event_notification = event_notification
+        self.product_name = product_name
+        self.status = status
+        self.origin = origin
+        self.destination = destination
+        self.events = events or []
+
+    @classmethod
+    def from_json(cls, json):
+        articles = []
+
+        for item in cls._ensure_list(json):
+            article = cls(
+                id=item['ArticleID'],
+                event_notification=item.get('EventNotification', None),
+                product_name=item.get('ProductName', None),
+                status=item.get('Status', None)
+            )
+
+            try:
+                article.origin = Country(
+                    item['OriginCountryCode'],
+                    item['OriginCountry'],
+                )
+            except KeyError:
+                pass
+
+            try:
+                article.destination = Country(
+                    item['DestinationCountryCode'],
+                    item['DestinationCountry'],
+                )
+            except KeyError:
+                pass
+
+            if item.get('EventCount', 0) > 0:
+                article.events = Event.from_json(item['Events'])
+
+            articles.append(article)
+        return articles
+
+
+class Consignment(common.AuspostObject):
+
+    def __init__(self, id, articles=None):
+        self.id = unicode(id)
+        self.articles = articles or []
+
+    @classmethod
+    def from_json(cls, json):
+        try:
+            consignment_json = json['ConsignmentDetails']
+        except KeyError:
+            return None
+
+        consignment = cls(
+            id=consignment_json.get('ConsignmentID'),
+        )
+        if consignment_json.get('ArticleCount', 0) > 0:
+            consignment.articles = Article.from_json(
+                consignment.get('Articles', [])
+            )
+        return consignment
+
+
+class Event(common.AuspostObject):
+
+    def __init__(self, description, timestamp, location, signer_name=None):
+        self.description = description
+        self.timestamp = timestamp
+        self.location = location
+        self.signer_name = signer_name
+
+    @classmethod
+    def from_json(cls, json):
+        events = []
+        try:
+            event_list = json['Event']
+        except KeyError:
+            return events
+
+        for item in cls._ensure_list(event_list):
+            event = cls(
+                description=item['EventDescription'],
+                timestamp=common.get_aware_utc_datetime(
+                    item['EventDateTime']
+                ),
+                location=item['Location'],
+            )
+            try: 
+                event.signer_name = item['SignerName'] or None
+            except KeyError:
+                pass
+            events.append(event)
+        return events
+
+
+class Country(object):
+
+    def __init__(self, code, name):
+        self.code = code
+        self.name = name
+
+    def __unicode__(self):
+        return u"%s (%s)" % (self.name, self.code)
