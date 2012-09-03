@@ -1,1 +1,45 @@
-{"PostcodeDeliveryCapabilities":{"PostcodeDeliveryCapability":{"Postcode":3121,"WeekDay":[{"DayType":1,"StandardDeliveryEnabled":true,"TimedDeliveryEnabled":true},{"DayType":2,"StandardDeliveryEnabled":true,"TimedDeliveryEnabled":true},{"DayType":3,"StandardDeliveryEnabled":true,"TimedDeliveryEnabled":true},{"DayType":4,"StandardDeliveryEnabled":true,"TimedDeliveryEnabled":true},{"DayType":5,"StandardDeliveryEnabled":true,"TimedDeliveryEnabled":true},{"DayType":6,"StandardDeliveryEnabled":false,"TimedDeliveryEnabled":false},{"DayType":7,"StandardDeliveryEnabled":false,"TimedDeliveryEnabled":false}],"LastModified":"2011-07-29T14:05:50.000+10:00"}}}
+{
+  "PostcodeDeliveryCapabilities": {
+    "PostcodeDeliveryCapability": {
+      "Postcode": 3121,
+      "WeekDay": [
+        {
+          "DayType": 1,
+          "StandardDeliveryEnabled": true,
+          "TimedDeliveryEnabled": true
+        },
+        {
+          "DayType": 2,
+          "StandardDeliveryEnabled": true,
+          "TimedDeliveryEnabled": true
+        },
+        {
+          "DayType": 3,
+          "StandardDeliveryEnabled": true,
+          "TimedDeliveryEnabled": true
+        },
+        {
+          "DayType": 4,
+          "StandardDeliveryEnabled": true,
+          "TimedDeliveryEnabled": true
+        },
+        {
+          "DayType": 5,
+          "StandardDeliveryEnabled": true,
+          "TimedDeliveryEnabled": true
+        },
+        {
+          "DayType": 6,
+          "StandardDeliveryEnabled": false,
+          "TimedDeliveryEnabled": false
+        },
+        {
+          "DayType": 7,
+          "StandardDeliveryEnabled": false,
+          "TimedDeliveryEnabled": false
+        }
+      ],
+      "LastModified": "2011-07-29T14:05:50.000+10:00"
+    }
+  }
+}

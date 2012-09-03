@@ -1,8 +1,6 @@
-from dateutil import parser as date_parser
 import requests
-from datetime import datetime, date
 
-from auspost_apis import common
+from auspost import common
 
 
 DEV_ENDPOINT = 'https://devcentre.auspost.com.au/myapi'
@@ -17,7 +15,7 @@ def api_request(f):
     return func
 
 
-class DeliveryChoiceApi(object):
+class DeliveryChoiceApi(common.AuspostObject):
 
     DELIVERY_NETWORKS = {
         '01': 'Standard',
@@ -46,7 +44,7 @@ class DeliveryChoiceApi(object):
             'networkId': network_id,
             'numberOfDates': number_of_dates,
         })
-        return DeliveryEstimateDate.from_json(response.json)
+        return DeliveryDate.from_json(response.json)
 
     @api_request
     def delivery_timeslots(self, day=None, **kwargs):
@@ -105,7 +103,7 @@ class DeliveryChoiceApi(object):
             raise common.AusPostException(code, message)
 
 
-class DeliveryDate(object):
+class DeliveryDate(common.AuspostObject):
 
     def __init__(self, delivery_date, working_days, timed_delivery):
         self.delivery_date = delivery_date
@@ -119,17 +117,13 @@ class DeliveryDate(object):
             res = res['DeliveryEstimateDate']
         except KeyError:
             raise Exception
-
-        try:
-            res.keys()
-            res = [res]
-        except AttributeError:
-            pass
+    
+        res = cls._ensure_list(res)
 
         dates = []
         for item in res:
             dates.append(cls(
-                date_parser.parse(item['DeliveryDate']),
+                common.get_aware_utc_datetime(item['DeliveryDate']),
                 item['NumberOfWorkingDays'],
                 item['TimedDeliveryEnabled'],
             ))
@@ -147,7 +141,7 @@ class DeliveryDate(object):
         return "%s %s" % (self.delivery_date, self.timed_delivery)
 
 
-class TimePeriod(object):
+class TimePeriod(common.AuspostObject):
 
     def __init__(self, start_time, end_time, duration):
         self.start_time = start_time
@@ -182,7 +176,7 @@ class TimePeriod(object):
         return periods
 
 
-class TimeSlot(object):
+class TimeSlot(common.AuspostObject):
 
     def __init__(self, week_day, periods=None):
         self.day = week_day
@@ -203,3 +197,54 @@ class TimeSlot(object):
                 periods,
             ))
         return timeslots
+
+
+class PostcodeDeliveryCapability(common.AuspostObject):
+
+    def __init__(self, postcode, days, last_modified):
+        self.postcode = postcode
+        self.days = days
+        self.last_modified = last_modified
+
+    @classmethod
+    def from_json(cls, json):
+        try:
+            result = json['PostcodeDeliveryCapabilities']
+            result = result['PostcodeDeliveryCapability']
+        except:
+            raise Exception
+
+        result = cls._ensure_list(result)
+
+        capabilities = []
+        for item in result:
+            utc_dt = common.get_aware_utc_datetime(item['LastModified'])
+            capabilities.append(
+                cls(
+                    postcode=item['Postcode'],
+                    last_modified=utc_dt,
+                    days=Day.from_json(item['WeekDay']), 
+                )
+            )
+        return capabilities
+
+
+class Day(common.AuspostObject):
+
+    def __init__(self, name, standard_delivery_enabled, timed_delivery_enabled):
+        self.name = name 
+        self.standard_delivery_enabled = standard_delivery_enabled
+        self.timed_delivery_enabled = timed_delivery_enabled
+
+    @classmethod
+    def from_json(cls, json):
+        days = []
+        for item in json:
+            days.append(
+                cls(
+                    name=common.DAY_CODES[item['DayType']],
+                    standard_delivery_enabled=item['StandardDeliveryEnabled'],
+                    timed_delivery_enabled=item['TimedDeliveryEnabled'],
+                )
+            )
+        return days

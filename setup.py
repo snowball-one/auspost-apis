@@ -18,6 +18,7 @@ setup(
         'versiontools>=1.9.1',
         'requests>=0.13.9',
         'python-dateutil>=2.1',
+        'pytz>=2012d',
     ],
     # See http://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
