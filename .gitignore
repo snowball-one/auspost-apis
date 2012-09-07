@@ -2,3 +2,7 @@
 *.pot
 *.sw[po]
 *.py[co]
+
+.tox
+docs/_build
+auspost_apis.egg-info/
