@@ -6,5 +6,7 @@
 *.sublime*
 
 .tox
+dist/
+build/
 docs/_build
 auspost_apis.egg-info/
