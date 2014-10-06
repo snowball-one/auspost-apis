@@ -1,0 +1,1 @@
+{"ValidateAustralianAddressResponse": {"ValidAustralianAddress": true, "Address": {"SuburbOrPlaceOrLocality": "SOUTHBANK", "AddressLine": "109/175 STURT ST", "DeliveryPointIdentifier": 45313239, "Country": {"CountryName": "Australia", "CountryCode": "A"}, "PostCode": 3006, "StateOrTerritory": "VIC"}}}

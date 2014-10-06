@@ -1,9 +1,11 @@
 import pytz
+
 from dateutil.tz import tzoffset
 from dateutil import parser as date_parser
 
+
 DELIVERY_CHOICE_ERROR_CODES = {
-    # delivery date 
+    # delivery date
     1001: "Invalid from postcode",
     1002: "Invalid to postcode",
     1003: "Invalid network id",

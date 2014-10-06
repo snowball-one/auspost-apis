@@ -16,7 +16,7 @@ setup(
     include_package_data=True,
     install_requires=[
         'versiontools>=1.9.1',
-        'requests>=0.13.9',
+        'requests>=1.0.2',
         'python-dateutil>=2.1',
         'pytz>=2012d',
     ],

@@ -3,6 +3,8 @@
 *.sw[po]
 *.py[co]
 
+*.sublime*
+
 .tox
 docs/_build
 auspost_apis.egg-info/

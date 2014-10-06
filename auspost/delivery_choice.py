@@ -21,8 +21,7 @@ class DeliveryChoiceApi(object):
 
     DELIVERY_NETWORKS = {
         '01': 'Standard',
-        '02': 'Express',
-    }
+        '02': 'Express'}
 
     def __init__(self, username=None, password=None):
         self.url = DEV_ENDPOINT
@@ -54,14 +53,13 @@ class DeliveryChoiceApi(object):
         if number_of_dates not in range(1, 11):
             raise common.AusPostException(1005)
 
-        response =  self.send_request(kwargs.get('api_name'), params={
+        response = self.send_request(kwargs.get('api_name'), params={
             'fromPostcode': from_postcode,
             'toPostcode': to_postcode,
             'lodgementDate': lodgement_date.strftime("%Y-%m-%d"),
             'networkId': network_id,
-            'numberOfDates': number_of_dates,
-        })
-        return DeliveryDate.from_json(response.json)
+            'numberOfDates': number_of_dates})
+        return DeliveryDate.from_json(response.json())
 
     @api_request
     def delivery_timeslots(self, day=None, **kwargs):
@@ -82,16 +80,20 @@ class DeliveryChoiceApi(object):
     def query_tracking(self, tracking_numbers, **kwargs):
         response = self.send_request(
             kwargs.get('api_name'),
-            params={
-                'q': ",".join(tracking_numbers),
-            }
-        )
-        return TrackingResult.from_json(response.json)
+            params={'q': ",".join(tracking_numbers)})
+        return TrackingResult.from_json(response.json())
 
     @api_request
     def validate_address(self, line1, suburb, state, postcode, line2=None,
                          country="Australia", **kwargs):
-        raise NotImplementedError()
+        response = self.send_request(kwargs.get('api_name'), params={
+            "addressLine1": line1,
+            "addressLine2": line2,
+            "suburb": suburb,
+            "state": state,
+            "postcode": postcode,
+            "country": country})
+        return ValidationResult.from_json(response.json())
 
     def get_parameter_kwargs(self, **kwargs):
         params = {}
@@ -107,20 +109,17 @@ class DeliveryChoiceApi(object):
             request_url,
             auth=(self.username, self.password),
             cookies={'OBBasicAuth': 'fromDialog'},
-            params=params,
-        )
+            params=params)
         self.check_response(response)
         return response
 
     def check_response(self, response):
         if response.status_code != 200:
             raise common.AusPostHttpException(
-                response.status_code,
-                response.reason,
-            )
+                response.status_code, response.reason)
 
         try:
-            exc = response.json.values()[0]['BusinessException']
+            exc = response.json().values()[0]['BusinessException']
             code, message = exc['Code'], exc['Description']
         except:
             return
@@ -139,7 +138,8 @@ class DeliveryDate(object):
     @classmethod
     def from_json(cls, json):
         try:
-            res = json['DeliveryEstimateRequestResponse']['DeliveryEstimateDates']
+            res = json['DeliveryEstimateRequestResponse'][
+                'DeliveryEstimateDates']
             res = res['DeliveryEstimateDate']
         except KeyError:
             raise Exception
@@ -151,17 +151,13 @@ class DeliveryDate(object):
             dates.append(cls(
                 common.get_aware_utc_datetime(item['DeliveryDate']),
                 item['NumberOfWorkingDays'],
-                item['TimedDeliveryEnabled'],
-            ))
+                item['TimedDeliveryEnabled']))
 
         return dates
 
     def __repr__(self):
         return "<%s date='%s' working_days='%s'>" % (
-            self.__class__.__name__,
-            self.delivery_date,
-            self.working_days,
-        )
+            self.__class__.__name__, self.delivery_date, self.working_days)
 
     def __unicode__(self):
         return "%s %s" % (self.delivery_date, self.timed_delivery)
@@ -195,10 +191,9 @@ class TimePeriod(object):
                     eh = 0
 
             periods.append(cls(
-                start_time= ":".join([str(sh)]+start_time[1:]),
-                end_time= ":".join([str(eh)]+end_time[1:]),
-                duration=item['Duration'],
-            ))
+                start_time=":".join([str(sh)]+start_time[1:]),
+                end_time=":".join([str(eh)]+end_time[1:]),
+                duration=item['Duration']))
         return periods
 
 
@@ -218,10 +213,7 @@ class TimeSlot(object):
         timeslots = []
         for item in result:
             periods = TimePeriod.from_json(item['TimePeriod'])
-            timeslots.append(cls(
-                item['WeekdayDescription'],
-                periods,
-            ))
+            timeslots.append(cls(item['WeekdayDescription'], periods))
         return timeslots
 
 
@@ -257,7 +249,8 @@ class PostcodeDeliveryCapability(object):
 
 class Day(object):
 
-    def __init__(self, name, standard_delivery_enabled, timed_delivery_enabled):
+    def __init__(self, name, standard_delivery_enabled,
+                 timed_delivery_enabled):
         self.name = name
         self.standard_delivery_enabled = standard_delivery_enabled
         self.timed_delivery_enabled = timed_delivery_enabled
@@ -292,22 +285,17 @@ class TrackingResult(object):
             raise Exception
 
         for item in common.ensure_list(tracking_list):
-            tracking_result = cls(
-                id=item['TrackingID'],
-            )
+            tracking_result = cls(id=item['TrackingID'])
 
             articles = Article.from_json(item.get('ArticleDetails', []))
             if len(articles) == 1:
                 tracking_result.article = articles[0]
             else:
                 raise common.AusPostException(
-                    'found more than 1 article in JSON response'
-                )
+                    'found more than 1 article in JSON response')
 
             if 'ConsignmentDetails' in item:
-                consignment = Consignment.from_json(
-                    item['ConsignmentDetails']
-                )
+                consignment = Consignment.from_json(item['ConsignmentDetails'])
                 tracking_result.consignment = consignment
 
             tracking_results.append(tracking_result)
@@ -315,10 +303,42 @@ class TrackingResult(object):
         return tracking_results
 
 
+class ValidationResult(object):
+
+    def __init__(self, address, is_valid=False):
+        self.address = address
+        self.is_valid = is_valid
+
+    @property
+    def has_address(self):
+        return self.address is not None
+
+    @classmethod
+    def from_json(cls, json):
+        try:
+            is_valid = json['ValidateAustralianAddressResponse'][
+                'ValidAustralianAddress']
+        except KeyError:
+            raise Exception
+
+        try:
+            address = Address.from_json(
+                json['ValidateAustralianAddressResponse']['Address'])
+        except KeyError:
+            address = None
+
+        return cls(address=address, is_valid=is_valid)
+
+    def __unicode__(self):
+        return "{address} is {valid}".format(
+            address=unicode(self.address),
+            valid='valid' if self.is_valid else 'invalid')
+
+
 class Article(object):
 
-    def __init__(self, id, product_name=None, event_notification=None, status=None,
-                 origin=None, destination=None, events=None):
+    def __init__(self, id, product_name=None, event_notification=None,
+                 status=None, origin=None, destination=None, events=None):
         self.id = unicode(id)
         self.event_notification = event_notification
         self.product_name = product_name
@@ -336,22 +356,19 @@ class Article(object):
                 id=item['ArticleID'],
                 event_notification=item.get('EventNotification', None),
                 product_name=item.get('ProductName', None),
-                status=item.get('Status', None)
-            )
+                status=item.get('Status', None))
 
             try:
                 article.origin = Country(
                     item['OriginCountryCode'],
-                    item['OriginCountry'],
-                )
+                    item['OriginCountry'])
             except KeyError:
                 pass
 
             try:
                 article.destination = Country(
                     item['DestinationCountryCode'],
-                    item['DestinationCountry'],
-                )
+                    item['DestinationCountry'])
             except KeyError:
                 pass
 
@@ -375,13 +392,11 @@ class Consignment(object):
         except KeyError:
             return None
 
-        consignment = cls(
-            id=consignment_json.get('ConsignmentID'),
-        )
+        consignment = cls(id=consignment_json.get('ConsignmentID'))
+
         if consignment_json.get('ArticleCount', 0) > 0:
             consignment.articles = Article.from_json(
-                consignment.get('Articles', [])
-            )
+                consignment.get('Articles', []))
         return consignment
 
 
@@ -405,10 +420,8 @@ class Event(object):
             event = cls(
                 description=item['EventDescription'],
                 timestamp=common.get_aware_utc_datetime(
-                    item['EventDateTime']
-                ),
-                location=item['Location'],
-            )
+                    item['EventDateTime']),
+                location=item['Location'])
             try:
                 event.signer_name = item['SignerName'] or None
             except KeyError:
@@ -423,5 +436,45 @@ class Country(object):
         self.code = code
         self.name = name
 
+    @classmethod
+    def from_json(cls, json):
+        try:
+            return cls(code=json['CountryCode'], name=json['CountryName'])
+        except KeyError:
+            raise Exception
+
     def __unicode__(self):
         return u"%s (%s)" % (self.name, self.code)
+
+
+class Address(object):
+
+    def __init__(self, id, addressLine1, suburb, state, postcode, country):
+        self.id = unicode(id)
+        self.addressLine1 = addressLine1
+        self.suburb = suburb
+        self.state = state
+        self.postcode = postcode
+        self.country = country
+
+    @classmethod
+    def from_json(cls, json):
+        try:
+            return cls(
+                id=json['DeliveryPointIdentifier'],
+                addressLine1=json['AddressLine'],
+                suburb=json['SuburbOrPlaceOrLocality'],
+                state=json['StateOrTerritory'],
+                postcode=json['PostCode'],
+                country=Country.from_json(json['Country']))
+        except KeyError:
+            raise Exception
+
+    def __unicode__(self):
+        return "({id}): {line1}, {suburb}, {state}, {postcode}, {country}".format(  # noqa
+            id=self.id,
+            line1=self.addressLine1,
+            suburb=self.suburb,
+            state=self.state,
+            postcode=self.postcode,
+            country=self.country.name)
